@@ -1,0 +1,164 @@
+{
+  "format": "neonplan-import",
+  "units": "m",
+  "rooms_at": "centre",
+  "floors": [
+    {
+      "name": "Planta Baja",
+      "elevation": 0,
+      "height": 3.8,
+      "rooms": [
+        {
+          "name": "Lobby Witronix (Recepción)",
+          "points": [
+            [0, 0],
+            [6.1, 0],
+            [6.1, 7.7],
+            [0, 7.7]
+          ]
+        },
+        {
+          "name": "Control de Acceso y Espera",
+          "points": [
+            [6.1, 0],
+            [13.0, 0],
+            [13.0, 7.7],
+            [6.1, 7.7]
+          ]
+        },
+        {
+          "name": "Pasillo Principal y Escaleras",
+          "points": [
+            [0, 7.7],
+            [19.0, 7.7],
+            [19.0, 11.5],
+            [0, 11.5]
+          ]
+        },
+        {
+          "name": "Cafetería y Lounge PB",
+          "points": [
+            [13.0, 0],
+            [19.0, 0],
+            [19.0, 7.7],
+            [13.0, 7.7]
+          ]
+        }
+      ],
+      "doors": [
+        { "at": [3.05, 0], "width": 1.6, "height": 2.4 },
+        { "at": [6.1, 3.85], "width": 1.1, "height": 2.1 },
+        { "at": [13.0, 3.85], "width": 1.1, "height": 2.1 },
+        { "at": [9.5, 7.7], "width": 1.4, "height": 2.1 }
+      ],
+      "windows": [
+        { "at": [1.5, 0], "width": 2.0, "height": 2.2, "sill": 0.3 },
+        { "at": [4.6, 0], "width": 2.0, "height": 2.2, "sill": 0.3 },
+        { "at": [16.0, 0], "width": 2.4, "height": 2.2, "sill": 0.3 }
+      ],
+      "furniture": [
+        { "type": "desk", "name": "Mostrador Recepción", "at": [4.5, 3.5], "width": 2.4, "depth": 0.9, "rotation": 180 },
+        { "type": "office_chair", "at": [4.5, 4.5], "rotation": 0 },
+        { "type": "sofa_l", "name": "Sofá Espera", "at": [2.0, 4.0], "width": 2.6, "depth": 2.0, "rotation": 90 },
+        { "type": "coffee_table", "at": [2.2, 4.0], "width": 1.0, "depth": 0.6 },
+        { "type": "plant", "at": [0.6, 0.6] },
+        { "type": "plant", "at": [5.5, 0.6] },
+        { "type": "lamp_pendant", "at": [3.0, 3.8] },
+        { "type": "tv_wall", "name": "Pantalla Info Witronix", "at": [0.1, 3.8], "width": 2.0, "rotation": 90 }
+      ]
+    },
+    {
+      "name": "Planta 1 (Oficinas)",
+      "elevation": 3.8,
+      "height": 3.4,
+      "rooms": [
+        {
+          "name": "Showroom Multimedia",
+          "points": [
+            [0, 0],
+            [13.5, 0],
+            [13.5, 7.5],
+            [0, 7.5]
+          ]
+        },
+        {
+          "name": "Sala de Juntas VIP",
+          "points": [
+            [13.5, 0],
+            [19.0, 0],
+            [19.0, 7.5],
+            [13.5, 7.5]
+          ]
+        },
+        {
+          "name": "Oficina Presidencia / Gerencia",
+          "points": [
+            [0, 7.5],
+            [9.0, 7.5],
+            [9.0, 13.5],
+            [0, 13.5]
+          ]
+        },
+        {
+          "name": "Open Space (Desarrollo y Diseño)",
+          "points": [
+            [9.0, 7.5],
+            [19.0, 7.5],
+            [19.0, 13.5],
+            [9.0, 13.5]
+          ]
+        }
+      ],
+      "doors": [
+        { "at": [6.75, 7.5], "width": 1.2, "height": 2.1 },
+        { "at": [13.5, 3.75], "width": 1.0, "height": 2.1 },
+        { "at": [14.0, 7.5], "width": 1.2, "height": 2.1 }
+      ],
+      "windows": [
+        { "at": [3.5, 0], "width": 2.8, "height": 1.8, "sill": 0.8 },
+        { "at": [9.5, 0], "width": 2.8, "height": 1.8, "sill": 0.8 },
+        { "at": [16.2, 0], "width": 2.2, "height": 1.8, "sill": 0.8 },
+        { "at": [0, 10.5], "width": 2.4, "height": 1.8, "sill": 0.8 }
+      ],
+      "furniture": [
+        { "type": "table", "name": "Mesa Conferencia Central", "at": [6.8, 3.8], "width": 3.6, "depth": 1.4 },
+        { "type": "office_chair", "at": [5.6, 2.7], "rotation": 0 },
+        { "type": "office_chair", "at": [6.8, 2.7], "rotation": 0 },
+        { "type": "office_chair", "at": [8.0, 2.7], "rotation": 0 },
+        { "type": "office_chair", "at": [5.6, 4.9], "rotation": 180 },
+        { "type": "office_chair", "at": [6.8, 4.9], "rotation": 180 },
+        { "type": "office_chair", "at": [8.0, 4.9], "rotation": 180 },
+        { "type": "tv_wall", "name": "Pantalla Samsung Wall 4K", "at": [13.4, 3.8], "width": 3.0, "rotation": 270 },
+        { "type": "lamp_ceiling", "at": [6.8, 3.8] },
+        { "type": "plant", "at": [0.6, 0.6] },
+        { "type": "sideboard", "at": [0.6, 3.8], "width": 2.0, "depth": 0.5, "rotation": 90 }
+      ]
+    },
+    {
+      "name": "Planta 2 (Terraza / Azotea)",
+      "elevation": 7.2,
+      "height": 2.8,
+      "rooms": [
+        {
+          "name": "Terraza Lounge y Espacio de Eventos",
+          "points": [
+            [0, 0],
+            [19.0, 0],
+            [19.0, 13.5],
+            [0, 13.5]
+          ]
+        }
+      ],
+      "furniture": [
+        { "type": "table_round", "at": [5.0, 5.0], "width": 1.4, "depth": 1.4 },
+        { "type": "chair", "at": [4.0, 5.0], "rotation": 90 },
+        { "type": "chair", "at": [6.0, 5.0], "rotation": 270 },
+        { "type": "table_round", "at": [12.0, 5.0], "width": 1.4, "depth": 1.4 },
+        { "type": "chair", "at": [11.0, 5.0], "rotation": 90 },
+        { "type": "chair", "at": [13.0, 5.0], "rotation": 270 },
+        { "type": "plant", "at": [1.0, 1.0] },
+        { "type": "plant", "at": [18.0, 1.0] }
+      ]
+    }
+  ]
+}

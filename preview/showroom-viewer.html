@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeonPlan 3D – Visor de Showroom Optimizado</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel-bg: rgba(11, 20, 36, 0.78);
+      --panel-border: rgba(0, 229, 255, 0.28);
+      --accent: #00e5ff;
+      --accent-glow: rgba(0, 229, 255, 0.45);
+      --accent-warm: #ffb547;
+      --accent-magenta: #ff2a85;
+      --text: #e1f0ff;
+      --text-muted: #8faec9;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+    }
+
+    #viewport-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Top Bar */
+    header {
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .brand-box {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 18px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 229, 255, 0.15);
+    }
+
+    .logo-text {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--accent);
+      text-shadow: 0 0 12px var(--accent-glow);
+      letter-spacing: 0.5px;
+    }
+
+    .badge {
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+      border: 1px solid var(--panel-border);
+      background: var(--panel-bg);
+      color: var(--text);
+      backdrop-filter: blur(12px);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 18px var(--accent-glow);
+      transform: translateY(-1px);
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #05101a;
+      border-color: var(--accent);
+      font-weight: 700;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      background: #4ef0ff;
+      color: #000;
+      box-shadow: 0 0 28px var(--accent);
+    }
+
+    /* Floating Panels */
+    .floating-panel {
+      position: absolute;
+      pointer-events: auto;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(18px);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 229, 255, 0.1);
+      z-index: 10;
+    }
+
+    /* Left Control Sidebar */
+    #controls-panel {
+      left: 20px;
+      top: 80px;
+      width: 290px;
+      max-height: calc(100vh - 100px);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .panel-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .segmented-control {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .segment-btn {
+      background: transparent;
+      border: 0;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 7px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .segment-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .segment-btn.active {
+      background: var(--accent);
+      color: #041019;
+      font-weight: 700;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .styled-select {
+      width: 100%;
+      padding: 9px 12px;
+      background: #091424;
+      border: 1px solid var(--accent);
+      color: var(--text);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.2);
+    }
+
+    .styled-select option {
+      background: #0b1628;
+      color: #fff;
+      padding: 6px;
+    }
+
+    /* Slider Row */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .slider-label span:last-child {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      outline: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent);
+      border: 2px solid #000;
+    }
+
+    /* Switch toggle */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 36px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .25s;
+      border-radius: 20px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #fff;
+      transition: .25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(16px);
+      background-color: #041019;
+    }
+
+    /* Stats Panel (Top Right) */
+    #stats-panel {
+      right: 20px;
+      top: 80px;
+      width: 250px;
+      font-size: 12px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+
+    .stat-val {
+      font-weight: 700;
+      color: var(--accent);
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .stat-val.good {
+      color: #00ffaa;
+      text-shadow: 0 0 8px rgba(0, 255, 170, 0.4);
+    }
+
+    /* Bottom Inspector Drawer */
+    #mesh-inspector {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(840px, calc(100% - 40px));
+      max-height: 140px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .mesh-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mesh-tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: var(--text-muted);
+    }
+
+    .mesh-tag:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .mesh-tag.active {
+      background: rgba(0, 229, 255, 0.18);
+      border-color: var(--accent);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Loading Overlay */
+    #loader {
+      position: absolute;
+      inset: 0;
+      background: #070b14;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      z-index: 100;
+      transition: opacity 0.5s ease;
+    }
+
+    .spinner {
+      width: 52px;
+      height: 52px;
+      border: 3px solid rgba(0, 229, 255, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 15px;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+
+    .loading-subtext {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Toast */
+    #toast {
+      position: absolute;
+      top: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 229, 255, 0.95);
+      color: #041019;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 8px 18px;
+      border-radius: 999px;
+      box-shadow: 0 0 24px var(--accent-glow);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 200;
+    }
+    /* Office 3D Pins Overlay */
+    #office-pins-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 8;
+      display: none;
+    }
+
+    .office-pin {
+      position: absolute;
+      pointer-events: auto;
+      cursor: pointer;
+      transform: translate(-50%, -100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.15s ease, opacity 0.2s ease;
+    }
+
+    .office-pin:hover {
+      transform: translate(-50%, -115%) scale(1.08);
+    }
+
+    .pin-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(7, 14, 28, 0.92);
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 16px var(--accent-glow);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+      white-space: nowrap;
+    }
+
+    .office-pin::after {
+      content: '';
+      display: block;
+      width: 2px;
+      height: 14px;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .pin-lobby .pin-badge {
+      border-color: #00e5ff;
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+    }
+    .pin-showroom .pin-badge {
+      border-color: #ff2a85;
+      box-shadow: 0 0 16px rgba(255, 42, 133, 0.5);
+    }
+    .pin-showroom::after {
+      background: #ff2a85;
+      box-shadow: 0 0 8px #ff2a85;
+    }
+
+    /* Sub-section for Unification Controls */
+    .unification-card {
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.25);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .unification-card.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">Cargando <b>showroom.glb</b>...</div>
+    <div class="loading-subtext">362,288 polígonos · Optimizando mallas y texturas</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <div id="viewport-container"></div>
+  <div id="office-pins-overlay">
+    <div class="office-pin pin-lobby" id="pin-lobby" data-office="lobby" title="Clic para entrar al Lobby">
+      <div class="pin-badge"><span>🏨</span> Lobby Witronix (PB)</div>
+    </div>
+    <div class="office-pin pin-showroom" id="pin-showroom" data-office="showroom" title="Clic para entrar al Showroom">
+      <div class="pin-badge"><span>💻</span> Showroom Multimedia (P1)</div>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand-box">
+      <span class="logo-text">NEONPLAN 3D</span>
+      <select id="model-select" class="styled-select" style="width: auto; padding: 4px 12px; font-size: 12px; margin-left: 6px; border-color: rgba(0,229,255,0.4); background: #070e1c;">
+        <option value="unified">🏛️ Edificio Unificado (Multi-Planta)</option>
+        <option value="building.glb">🏢 Edificio Completo (building.glb)</option>
+        <option value="lobby.glb">🏨 Lobby Witronix (lobby.glb)</option>
+        <option value="showroom.glb">💻 Showroom Multimedia (showroom.glb)</option>
+      </select>
+    </div>
+    <div class="top-actions">
+      <button id="btn-load-custom" class="btn" title="Cargar otro archivo .GLB o .GLTF">
+        📁 Cargar otro .GLB
+      </button>
+      <input type="file" id="custom-file-input" accept=".glb,.gltf" style="display:none;" />
+      <a href="index.html" class="btn" title="Volver a la vista previa de NeonPlan 3D">
+        ◀ Volver a NeonPlan
+      </a>
+      <a href="../site/import/index.html" class="btn" target="_blank" title="Abrir importador para convertir a plano 2D/3D">
+        📂 Importador de Planos
+      </a>
+      <button id="btn-fullscreen" class="btn" title="Pantalla completa">
+        ⛶ Pantalla Completa
+      </button>
+    </div>
+  </header>
+
+  <!-- Left Controls Panel -->
+  <div id="controls-panel" class="floating-panel">
+    <!-- Unification Panel (Active in Unified Mode) -->
+    <div id="unification-section" class="unification-card">
+      <div class="panel-section-title" style="margin-top:0; color:#00e5ff;">
+        <span>Enfoque y Aislamiento de Oficina</span>
+      </div>
+      <div class="segmented-control" id="office-focus-selector" style="margin-bottom:6px;">
+        <button class="segment-btn active" data-focus="all">🏢 Todo</button>
+        <button class="segment-btn" data-focus="lobby">🏨 Lobby (PB)</button>
+        <button class="segment-btn" data-focus="showroom">💻 Showroom (P1)</button>
+      </div>
+      <div style="font-size:11px; color:#8faec9; margin-bottom:12px; line-height:1.3;">
+        💡 Al seleccionar una oficina, el resto del edificio y los demás salones se vuelven casi invisibles para una vista limpia sin obstrucciones.
+      </div>
+
+      <div class="panel-section-title" style="margin-top:4px; font-size:11px;">
+        <span>Plantas del Edificio</span>
+      </div>
+      <div class="segmented-control" id="floor-filter">
+        <button class="segment-btn active" data-floor="all">Todas</button>
+        <button class="segment-btn" data-floor="0">PB (Lobby)</button>
+        <button class="segment-btn" data-floor="1">P1 (Showroom)</button>
+      </div>
+
+      <label class="toggle-row" style="margin-top: 10px;">
+        <span style="font-size: 12px; font-weight:600;">Fachada Rayos X (Ver dentro)</span>
+        <div class="switch">
+          <input type="checkbox" id="chk-facade-xray" checked />
+          <span class="slider"></span>
+        </div>
+      </label>
+
+      <div class="panel-section-title" style="margin-top:12px; font-size:11px; text-transform:uppercase;">
+        <span>Definir Ubicación de Oficina</span>
+      </div>
+      <select id="calibrate-office-select" class="styled-select" style="font-size:12px; padding:6px 10px; margin-bottom:8px;">
+        <option value="lobby">🏨 Lobby Witronix (Planta Baja)</option>
+        <option value="showroom">💻 Showroom Multimedia (Planta 1)</option>
+      </select>
+
+      <div class="slider-row">
+        <div class="slider-label" style="font-size:11px;">
+          <span>Posición X (Eje Lateral)</span>
+          <span id="calib-x-val">0.0 m</span>
+        </div>
+        <input type="range" id="calib-x-slider" min="-18" max="18" step="0.2" value="0" />
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label" style="font-size:11px;">
+          <span>Elevación Y (Piso / Altura)</span>
+          <span id="calib-y-val">0.0 m</span>
+        </div>
+        <input type="range" id="calib-y-slider" min="0" max="8" step="0.1" value="0" />
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label" style="font-size:11px;">
+          <span>Posición Z (Profundidad)</span>
+          <span id="calib-z-val">0.0 m</span>
+        </div>
+        <input type="range" id="calib-z-slider" min="-18" max="18" step="0.2" value="0" />
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label" style="font-size:11px;">
+          <span>Giro / Rotación Y</span>
+          <span id="calib-rot-val">0°</span>
+        </div>
+        <input type="range" id="calib-rot-slider" min="0" max="360" step="15" value="0" />
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-label" style="font-size:11px;">
+          <span>Escala del Salón</span>
+          <span id="calib-scale-val">1.0x</span>
+        </div>
+        <input type="range" id="calib-scale-slider" min="0.1" max="2.5" step="0.05" value="1.0" />
+      </div>
+
+      <div style="display:flex; gap:6px; margin-top:8px;">
+        <button id="btn-focus-active-office" class="btn" style="flex:1; justify-content:center; font-size:11px; padding:6px 8px;">
+          🎯 Ir a Oficina
+        </button>
+        <button id="btn-copy-coords" class="btn" style="flex:1; justify-content:center; font-size:11px; padding:6px 8px;" title="Copiar coordenadas X, Y, Z para el plano JSON">
+          📋 Copiar Coords
+        </button>
+      </div>
+    </div>
+    <div class="panel-section-title">
+      <span>Mueble por Mueble (Inspección)</span>
+    </div>
+    <select id="furniture-select" class="styled-select">
+      <option value="all">🏠 Todo el Showroom (Vista Completa)</option>
+      <option value="tv">📺 Mueble TV Samsung HDTV</option>
+      <option value="table">🖥️ Mesa de Trabajo Central</option>
+      <option value="chairs">🪑 Sillas de Oficina</option>
+      <option value="blinds">🪟 Persianas y Ventanales</option>
+      <option value="floor">🪵 Suelo de Tarima</option>
+      <option value="garden">🌱 Jardín y Vegetación</option>
+      <option value="person">👤 Figura Humana</option>
+    </select>
+
+    <div class="panel-section-title">
+      <span>Modo de Visualización</span>
+    </div>
+    <div class="segmented-control" id="isolation-mode">
+      <button class="segment-btn active" data-iso="isolate">Solo este Mueble</button>
+      <button class="segment-btn" data-iso="ghost">Rayos X</button>
+      <button class="segment-btn" data-iso="focus">Enfocar</button>
+    </div>
+
+    <label class="toggle-row" style="background: rgba(0, 229, 255, 0.08); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(0, 229, 255, 0.2);">
+      <span style="font-weight: 600; color: #fff;">Cortar paredes altas (Ver interior)</span>
+      <div class="switch">
+        <input type="checkbox" id="chk-wallcut" checked />
+        <span class="slider"></span>
+      </div>
+    </label>
+
+    <div class="panel-section-title">
+      <span>Estilo Visual</span>
+    </div>
+    <div class="segmented-control" id="theme-selector">
+      <button class="segment-btn active" data-theme="realistic">Realista (PBR)</button>
+      <button class="segment-btn" data-theme="neon">NeonPlan</button>
+      <button class="segment-btn" data-theme="blueprint">Plano</button>
+      <button class="segment-btn" data-theme="wireframe">Malla</button>
+    </div>
+
+    <div class="panel-section-title">
+      <span>Vistas de Cámara</span>
+    </div>
+    <div class="segmented-control" id="camera-selector">
+      <button class="segment-btn active" data-cam="perspective">3D</button>
+      <button class="segment-btn" data-cam="top">Planta 2D</button>
+      <button class="segment-btn" data-cam="front">Frontal</button>
+      <button class="segment-btn" data-cam="side">Lateral</button>
+    </div>
+
+    <div class="panel-section-title">
+      <span>Vista Expandida (Explode 3D)</span>
+    </div>
+    <div class="slider-row">
+      <div class="slider-label">
+        <span>Separación de piezas</span>
+        <span id="explode-val">0%</span>
+      </div>
+      <input type="range" id="explode-slider" min="0" max="100" value="0" />
+    </div>
+
+    <div class="panel-section-title">
+      <span>Optimización & Render</span>
+    </div>
+
+    <label class="toggle-row">
+      <span>Render bajo demanda (Dirty check)</span>
+      <div class="switch">
+        <input type="checkbox" id="chk-demand" checked />
+        <span class="slider"></span>
+      </div>
+    </label>
+
+    <label class="toggle-row">
+      <span>Rotación Automática (Showcase)</span>
+      <div class="switch">
+        <input type="checkbox" id="chk-rotate" />
+        <span class="slider"></span>
+      </div>
+    </label>
+
+    <div class="slider-row" style="margin-top: 6px;">
+      <button id="btn-reset-cam" class="btn btn-primary" style="width: 100%; justify-content: center;">
+        🎯 Centrar Cámara
+      </button>
+    </div>
+  </div>
+
+  <!-- Stats Panel (Top Right) -->
+  <div id="stats-panel" class="floating-panel">
+    <div class="panel-section-title" style="margin-bottom: 8px;">
+      <span>Rendimiento Gráfico</span>
+      <span class="badge" id="opt-badge" style="background: rgba(0,255,170,0.15); border-color: #00ffaa; color: #00ffaa;">Fluido</span>
+    </div>
+    <div class="stat-row">
+      <span>Tasa de Refresco</span>
+      <span class="stat-val good" id="stat-fps">60 FPS</span>
+    </div>
+    <div class="stat-row">
+      <span>Triángulos (Polígonos)</span>
+      <span class="stat-val" id="stat-tris">362,288</span>
+    </div>
+    <div class="stat-row">
+      <span>Mallas / Objetos</span>
+      <span class="stat-val" id="stat-meshes">66</span>
+    </div>
+    <div class="stat-row">
+      <span>Materiales Únicos</span>
+      <span class="stat-val" id="stat-mats">64</span>
+    </div>
+    <div class="stat-row">
+      <span>Llamadas de dibujo (Draw Calls)</span>
+      <span class="stat-val" id="stat-draws">66</span>
+    </div>
+    <div class="stat-row">
+      <span>Uso GPU en reposo</span>
+      <span class="stat-val good" id="stat-idle">0% (Bajo demanda)</span>
+    </div>
+  </div>
+
+  <!-- Bottom Mesh Filter Drawer -->
+  <div id="mesh-inspector" class="floating-panel">
+    <div class="panel-section-title">
+      <span>Capas y Elementos del Showroom (Haz clic para aislar o ver)</span>
+      <button id="btn-show-all" class="btn" style="padding: 2px 10px; font-size: 11px;">Mostrar Todo</button>
+    </div>
+    <div class="mesh-tags" id="mesh-tags-container"></div>
+  </div>
+
+  <script type="module" src="showroom-bundle.js"></script>
+</body>
+</html>
