@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Witronix 3D – Panel Home Assistant</title>
+  <style>
+    :root {
+      --bg: #070b14;
+      --panel-bg: rgba(9, 17, 32, 0.82);
+      --panel-border: rgba(0, 229, 255, 0.28);
+      --accent: #00e5ff;
+      --accent-glow: rgba(0, 229, 255, 0.45);
+      --accent-magenta: #ff2a85;
+      --accent-warm: #ffb547;
+      --accent-green: #00ffaa;
+      --text: #e1f0ff;
+      --text-muted: #8faec9;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      font-family: 'Figtree', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      color: var(--text);
+    }
+
+    #viewport-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Top HUD Navigation Bar */
+    header {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 20;
+    }
+
+    .brand-box {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 16px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(0, 229, 255, 0.15);
+    }
+
+    .logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--accent);
+      text-shadow: 0 0 12px var(--accent-glow);
+      letter-spacing: 0.5px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 255, 170, 0.12);
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .hud-controls-top {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Segmented Control Buttons */
+    .segmented-control {
+      display: inline-flex;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 3px;
+      backdrop-filter: blur(14px);
+    }
+
+    .segment-btn {
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .segment-btn:hover {
+      color: #fff;
+    }
+
+    .segment-btn.active {
+      background: var(--accent);
+      color: #041019;
+      box-shadow: 0 0 14px var(--accent-glow);
+    }
+
+    .btn-icon {
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      color: var(--text);
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      transition: all 0.2s ease;
+    }
+
+    .btn-icon:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 14px var(--accent-glow);
+      color: #fff;
+    }
+
+    /* 3D Floating Pins Overlay */
+    #pins-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 10;
+    }
+
+    .ha-3d-pin {
+      position: absolute;
+      pointer-events: auto;
+      cursor: pointer;
+      transform: translate(-50%, -100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.2s ease, opacity 0.25s ease;
+    }
+
+    .ha-3d-pin:hover {
+      transform: translate(-50%, -115%) scale(1.08);
+    }
+
+    .pin-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(7, 14, 28, 0.92);
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 18px var(--accent-glow);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
+    }
+
+    .pin-chip .pin-val {
+      color: var(--accent-warm);
+      font-weight: 800;
+      padding: 2px 6px;
+      background: rgba(255, 181, 71, 0.15);
+      border-radius: 6px;
+    }
+
+    .ha-3d-pin::after {
+      content: '';
+      display: block;
+      width: 2px;
+      height: 14px;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .pin-showroom .pin-chip {
+      border-color: var(--accent-magenta);
+      box-shadow: 0 0 18px rgba(255, 42, 133, 0.55);
+    }
+    .pin-showroom::after {
+      background: var(--accent-magenta);
+      box-shadow: 0 0 8px var(--accent-magenta);
+    }
+
+    .ha-3d-pin.active .pin-chip {
+      border-color: #fff;
+      box-shadow: 0 0 24px var(--accent), 0 0 35px rgba(0, 229, 255, 0.7);
+      transform: scale(1.08);
+    }
+
+    /* Floating Home Assistant Controller Widget (Bottom-Right) */
+    #ha-controller-card {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 18px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 229, 255, 0.12);
+      padding: 16px;
+      z-index: 25;
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+      padding-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      background: rgba(0, 229, 255, 0.05);
+      border: 1px solid rgba(0, 229, 255, 0.12);
+      border-radius: 12px;
+      padding: 8px 12px;
+    }
+
+    .control-label {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .control-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .control-status {
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    /* AC Temp Adjustment Buttons */
+    .temp-adjuster {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .temp-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: rgba(0, 229, 255, 0.15);
+      border: 1px solid var(--accent);
+      color: #fff;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+
+    .temp-btn:hover {
+      background: var(--accent);
+      color: #041019;
+    }
+
+    .temp-val-display {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--accent-warm);
+      min-width: 44px;
+      text-align: center;
+    }
+
+    /* Toggle switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      background-color: #1a283e;
+      border: 1px solid var(--panel-border);
+      transition: 0.25s;
+      border-radius: 24px;
+      cursor: pointer;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #8faec9;
+      transition: 0.25s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+      background-color: #05101a;
+    }
+
+    /* Furniture Isolation Selector */
+    .furn-row {
+      margin-top: 10px;
+    }
+
+    .furn-select {
+      width: 100%;
+      background: #091424;
+      border: 1px solid var(--panel-border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .furn-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(7, 14, 28, 0.94);
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 20px var(--accent-glow);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 20px;
+      border-radius: 999px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 100;
+      white-space: nowrap;
+    }
+
+    /* Loader */
+    #loader {
+      position: absolute;
+      inset: 0;
+      background: #070b14;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      transition: opacity 0.4s ease;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid rgba(0, 229, 255, 0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      box-shadow: 0 0 16px var(--accent-glow);
+      margin-bottom: 18px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+    }
+
+    .loading-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div id="loader">
+    <div class="spinner"></div>
+    <div class="loading-text">Cargando <b>Witronix 3D</b> para Home Assistant...</div>
+    <div class="loading-sub">Sincronizando modelos, cotas y climatización</div>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- 3D Canvas Viewport -->
+  <div id="viewport-container"></div>
+
+  <!-- 3D Overlaid Pins (Temperature, AC, Presence) -->
+  <div id="pins-overlay">
+    <div class="ha-3d-pin pin-lobby" id="pin-lobby" title="Clic para aislar el Lobby">
+      <div class="pin-chip">
+        <span>🏨 Lobby</span>
+        <span class="pin-val" id="badge-temp-lobby">22.5°C</span>
+      </div>
+    </div>
+    <div class="ha-3d-pin pin-showroom" id="pin-showroom" title="Clic para aislar el Showroom">
+      <div class="pin-chip">
+        <span>💻 Showroom</span>
+        <span class="pin-val" id="badge-temp-showroom">21.0°C</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation & View Controls -->
+  <header>
+    <div class="brand-box">
+      <span class="logo-text">WITRONIX 3D</span>
+      <div class="status-badge">
+        <span class="status-dot"></span>
+        <span id="ha-conn-status">HA Conectado</span>
+      </div>
+    </div>
+
+    <div class="hud-controls-top">
+      <!-- Office Focus / Isolation Selector -->
+      <div class="segmented-control" id="office-selector">
+        <button class="segment-btn active" data-office="all">🏢 Todo</button>
+        <button class="segment-btn" data-office="lobby">🏨 Lobby (PB)</button>
+        <button class="segment-btn" data-office="showroom">💻 Showroom (P1)</button>
+      </div>
+
+      <!-- Camera Views (3D, Top 2D, Lateral 2D, Frontal) -->
+      <div class="segmented-control" id="camera-selector">
+        <button class="segment-btn active" data-cam="perspective">3D</button>
+        <button class="segment-btn" data-cam="top">Planta 2D</button>
+        <button class="segment-btn" data-cam="side">Lateral 2D</button>
+        <button class="segment-btn" data-cam="front">Frontal</button>
+      </div>
+
+      <button id="btn-reset-cam" class="btn-icon" title="Centrar Cámara">
+        🎯
+      </button>
+    </div>
+  </header>
+
+  <!-- Interactive Home Assistant Entity Control Card -->
+  <div id="ha-controller-card">
+    <div class="card-header">
+      <div>
+        <div class="card-title">
+          <span id="active-room-icon">🏢</span>
+          <span id="active-room-title">Edificio Completo</span>
+        </div>
+        <div class="card-sub" id="active-room-sub">Selecciona una oficina o usa los controles</div>
+      </div>
+      <button id="btn-toggle-card" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;">−</button>
+    </div>
+
+    <!-- Air Conditioning / Clima Control -->
+    <div class="control-row">
+      <div class="control-label">
+        <span class="control-name">❄️ Clima / Aire Acond.</span>
+        <span class="control-status" id="ac-status-text">Activo · 21.0°C</span>
+      </div>
+      <div class="temp-adjuster">
+        <button class="temp-btn" id="btn-temp-minus">−</button>
+        <span class="temp-val-display" id="temp-display">21.0°</span>
+        <button class="temp-btn" id="btn-temp-plus">+</button>
+        <label class="switch" style="margin-left: 6px;">
+          <input type="checkbox" id="chk-ac-power" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Lighting / Luces Control -->
+    <div class="control-row">
+      <div class="control-label">
+        <span class="control-name">💡 Iluminación Neón</span>
+        <span class="control-status" id="light-status-text">Encendido</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="chk-lights-power" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Solo Muebles / Inspección de Elementos -->
+    <div class="furn-row">
+      <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">
+        🪑 INSPECCIÓN (SOLO ESTE MUEBLE)
+      </div>
+      <select id="furniture-select" class="furn-select">
+        <option value="all">🏠 Todo el mobiliario</option>
+        <option value="tables">🖥️ Mesa de Conferencia / Escritorio</option>
+        <option value="screen">📺 Pantalla Wall Samsung 4K</option>
+        <option value="chairs">🪑 Sillas de Oficina</option>
+        <option value="upholstery">🛋️ Sofás y Tapicería</option>
+        <option value="lighting">💡 Lámparas y Candelabros</option>
+        <option value="glass">🪟 Ventanales de Cristal</option>
+        <option value="ac_unit">❄️ Unidad Aire Acondicionado 3D</option>
+      </select>
+    </div>
+  </div>
+
+  <script type="module" src="ha-panel-bundle.js"></script>
+</body>
+</html>
