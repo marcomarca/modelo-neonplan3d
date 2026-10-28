@@ -267,17 +267,30 @@ async function loadUnifiedBuilding() {
 
   const parseBuffer = (buf) => new Promise((res, rej) => gltfLoader.parse(buf, '', res, rej));
 
-  try {
-    const [resB, resL, resS] = await Promise.all([
-      fetch('../building.glb'),
-      fetch('../lobby.glb'),
-      fetch('../showroom.glb')
-    ]);
+  async function fetchAssetBuffer(filename) {
+    const candidates = [
+      filename,
+      './' + filename,
+      '../' + filename,
+      '/local/witronix-3d/' + filename,
+      '/config/www/witronix-3d/' + filename
+    ];
+    for (const path of candidates) {
+      try {
+        const res = await fetch(path);
+        if (res.ok) {
+          return await res.arrayBuffer();
+        }
+      } catch (_) {}
+    }
+    throw new Error('No se pudo cargar el archivo: ' + filename);
+  }
 
+  try {
     const [bufB, bufL, bufS] = await Promise.all([
-      resB.arrayBuffer(),
-      resL.arrayBuffer(),
-      resS.arrayBuffer()
+      fetchAssetBuffer('building.glb'),
+      fetchAssetBuffer('lobby.glb'),
+      fetchAssetBuffer('showroom.glb')
     ]);
 
     const [gltfB, gltfL, gltfS] = await Promise.all([
@@ -620,8 +633,13 @@ function updateControllerCardContent() {
 // Home Assistant Communication Helper (Calls HA Services or dispatches events)
 function sendHomeAssistantService(domain, service, serviceData) {
   console.log('[Home Assistant Service Call]', domain, service, serviceData);
-  // 1. If running inside Home Assistant panel/iframe with hass object:
   if (window.parent && window.parent !== window) {
+    window.parent.postMessage({
+      type: 'HA_CALL_SERVICE',
+      domain: domain || 'switch',
+      service: service || 'toggle',
+      serviceData: serviceData || {},
+    }, '*');
     window.parent.postMessage({
       type: 'call-service',
       domain,
@@ -747,19 +765,62 @@ function setupUIEvents() {
     });
   }
 
+  // Home Assistant Sidebar Hamburger Menu Toggle
+  document.getElementById('btn-toggle-ha-menu')?.addEventListener('click', () => {
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage({ type: 'HA_TOGGLE_MENU' }, '*');
+    }
+  });
+
   // Listen for Home Assistant inbound messages
   window.addEventListener('message', (event) => {
     const data = event.data;
-    if (data && data.type === 'ha-state-update') {
-      if (data.entity_id.includes('lobby') && data.temperature) {
+    if (!data) return;
+
+    if (data.type === 'HA_STATES' && data.states) {
+      for (const [id, entity] of Object.entries(data.states)) {
+        const idLower = id.toLowerCase();
+        if (idLower.includes('showroom')) {
+          if (idLower.startsWith('climate.')) {
+            const t = parseFloat(entity.attributes?.current_temperature ?? entity.attributes?.temperature);
+            if (!isNaN(t)) HA_STATE.showroom.temp = t;
+            HA_STATE.showroom.ac_on = entity.state !== 'off';
+          } else if (idLower.startsWith('sensor.') && (idLower.includes('temp') || idLower.includes('temperatura'))) {
+            const val = parseFloat(entity.state);
+            if (!isNaN(val)) HA_STATE.showroom.temp = val;
+          } else if (idLower.startsWith('light.')) {
+            HA_STATE.showroom.light_on = entity.state === 'on';
+          }
+        }
+        if (idLower.includes('lobby') || idLower.includes('recepcion')) {
+          if (idLower.startsWith('climate.')) {
+            const t = parseFloat(entity.attributes?.current_temperature ?? entity.attributes?.temperature);
+            if (!isNaN(t)) HA_STATE.lobby.temp = t;
+            HA_STATE.lobby.ac_on = entity.state !== 'off';
+          } else if (idLower.startsWith('sensor.') && (idLower.includes('temp') || idLower.includes('temperatura'))) {
+            const val = parseFloat(entity.state);
+            if (!isNaN(val)) HA_STATE.lobby.temp = val;
+          } else if (idLower.startsWith('light.')) {
+            HA_STATE.lobby.light_on = entity.state === 'on';
+          }
+        }
+      }
+      updateControllerCardContent();
+    } else if (data.type === 'ha-state-update') {
+      if (data.entity_id?.includes('lobby') && data.temperature) {
         HA_STATE.lobby.temp = data.temperature;
       }
-      if (data.entity_id.includes('showroom') && data.temperature) {
+      if (data.entity_id?.includes('showroom') && data.temperature) {
         HA_STATE.showroom.temp = data.temperature;
       }
       updateControllerCardContent();
     }
   });
+
+  // Notify parent container that iframe is mounted and ready
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'HA_READY' }, '*');
+  }
 }
 
 function onWindowResize() {
